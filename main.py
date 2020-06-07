@@ -2,12 +2,16 @@ import numpy as np
 import matplotlib.pyplot as plt
 import networkx as nx
 
-n = 40 #population size
-p = 4 / n #connectivity probability between the nodes (used in erdos renyi graph)
+n = 30 #population size
+p = 3 / n #connectivity probability between the nodes (used in erdos renyi graph)
+
 G = nx.erdos_renyi_graph(n, p)
-T = 10 #maximum time-steps
-sat_threshold = 0.5 #satisfaction threshold
-first_ethn_population = int(n * 0.48 ) #percentage of agents of the first ethnicity
+while not nx.is_connected(G):
+    G = nx.erdos_renyi_graph(n, p)
+    
+T = 200 #maximum time-steps
+sat_threshold = 0.3 #satisfaction threshold
+first_ethn_population = int(n * 0.35 ) #percentage of agents of the first ethnicity
 #nx.draw(G)
 
 agents = np.recarray((n), dtype=[('ethn', int), ('similar_neigh', float)]) 
@@ -28,11 +32,10 @@ def update_satisifaction(G):
             return -1
         else:
             neighbors = np.array( list(G.neighbors(i) ))
-            #print(neighbors)
             occupied_neighbors = neighbors[  agents['ethn'][neighbors] != -1  ]
-            #print(occupied_neighbors)
+
             desired_neighbors = np.sum( agents['ethn'][occupied_neighbors] == my_type )
-            if len(neighbors) == 0:
+            if len(occupied_neighbors) == 0:
                 agents['similar_neigh'][i] = 1
             else:
                 agents['similar_neigh'][i] = desired_neighbors / len(neighbors)
@@ -53,9 +56,13 @@ def move_candidate(agents):
     agents['ethn'][unsat_cand], agents['ethn'][vacant_cand] =\
      agents['ethn'][vacant_cand], agents['ethn'][unsat_cand]
 
+def unsatisfied_exists(agents):
+    unsat_arr = np.where( np.all([agents['similar_neigh'] < sat_threshold, agents['ethn'] != -1], 0) )[0]
+    print(len(unsat_arr))
+    return len(unsat_arr)
 
-
-for t in range(T):
-    update_satisifaction(G)
-    move_candidate(agents)
-#    #print( agents['ethn'] )
+#for t in range(T):
+#    update_satisifaction(G)
+#    if unsatisfied_exists(agents):
+#        move_candidate(agents)
+#    #print( agents['similar_neigh'] )
